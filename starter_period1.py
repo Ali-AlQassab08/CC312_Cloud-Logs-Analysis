@@ -34,10 +34,19 @@ def parse_line(line: str):
     timestamp | level | service | message
     """
     # TODO 1: strip whitespace and ignore empty lines (treat empty as invalid)
+    line = line.strip()
+    if not line:
+        return None
+    
     # TODO 2: split by '|' and trim whitespace around each part
+    parts = [part.strip() for part in line.split('|')]
+    
     # TODO 3: if you do NOT have exactly 4 parts, return None
+    if len(parts) != 4:
+        return None
+    
     # TODO 4: return the 4 parts (timestamp, level, service, message)
-    pass
+    return tuple(parts)
 
 
 def normalize_level(level: str) -> str:
