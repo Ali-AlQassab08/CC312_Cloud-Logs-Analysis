@@ -33,12 +33,20 @@ def parse_line(line: str):
     Returns (timestamp, level, service, message) OR None if format invalid.
     """
     # TODO 1: Implement parse_line (same rules as Period 1)
-    pass
+    line = line.strip()
+    if not line:
+        return None
+
+    parts = [part.strip() for part in line.split("|")]
+    if len(parts) != 4:
+        return None
+
+    return tuple(parts)
 
 
 def normalize_level(level: str) -> str:
     # TODO 2: return uppercase level
-    pass
+    return level.upper()
 
 
 def main():
@@ -75,8 +83,30 @@ def main():
     # timestamp | LEVEL | service | message
     #
     # (LEVEL must be uppercase)
+    with LOG_FILE.open("r", encoding="utf-8") as handle:
+        for line in handle:
+            total_lines += 1
+            parsed = parse_line(line)
+            if parsed is None:
+                invalid_lines += 1
+                continue
+
+            timestamp, level, service, message = parsed
+            level = normalize_level(level)
+            if level not in ALLOWED_LEVELS:
+                invalid_lines += 1
+                continue
+
+            valid_lines += 1
+            level_counts[level] += 1
+            service_counter[service] += 1
+            if level == "ERROR":
+                error_message_counter[message] += 1
+
+            clean_lines.append(f"{timestamp} | {level} | {service} | {message}")
 
     # TODO 4: Write clean_lines into clean_logs.txt (one per line)
+    CLEAN_FILE.write_text("\n".join(clean_lines), encoding="utf-8")
 
     # TODO 5: Build the summary dictionary with this exact structure:
     # {
@@ -87,8 +117,27 @@ def main():
     #   "top_services": [{"service":..., "count":...}, ... up to 3],
     #   "top_errors": [{"message":..., "count":...}, ... up to 3]
     # }
+    top_services = [
+        {"service": service, "count": count}
+        for service, count in service_counter.most_common(3)
+    ]
+    top_errors = [
+        {"message": message, "count": count}
+        for message, count in error_message_counter.most_common(3)
+    ]
+
+    summary = {
+        "total_lines": total_lines,
+        "valid_lines": valid_lines,
+        "invalid_lines": invalid_lines,
+        "levels": level_counts,
+        "top_services": top_services,
+        "top_errors": top_errors,
+    }
 
     # TODO 6: Save summary.json using json.dump(..., indent=2)
+    with SUMMARY_FILE.open("w", encoding="utf-8") as handle:
+        json.dump(summary, handle, indent=2)
 
     # Optional self-check prints (you can keep them):
     # print("Valid:", valid_lines, "Invalid:", invalid_lines)
